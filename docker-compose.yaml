@@ -1,0 +1,59 @@
+version: "3.8"
+
+networks:
+  kafka-net:          # ← rede única e nomeada
+    driver: bridge
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports: ["2181:2181"]
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - kafka-net      # ← usa a rede
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    hostname: kafka
+    container_name: kafka
+    depends_on: [zookeeper]
+    ports:
+      - "9092:9092"      # comunicação interna
+      - "29092:29092"    # acesso pelo host, se precisar
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+    networks:
+      - kafka-net
+
+  api:               # FastAPI
+    build: .
+    container_name: fastapi-app
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on: [kafka]
+    ports:
+      - "8081:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    networks:
+      - kafka-net
+
+  consumers:        # Workers Kafka
+    build: .
+    container_name: kafka-consumers
+    command: ["python", "-m", "app.run_consumers"]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on: [kafka]
+    networks:
+      - kafka-net
