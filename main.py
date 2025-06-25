@@ -25,6 +25,10 @@ class TaskResponse(BaseModel):
     status: str = "queued"
     message: str
 
+class SetWebhookResponse(BaseModel):
+    status: str  
+    message: str
+
 def enqueue(endpoint: str, data: Dict[str, Any]) -> TaskResponse:
     try:
         task_id = producer.send_task(endpoint, data)
@@ -47,3 +51,6 @@ async def endpoint2(req: GenericRequest):
 async def endpoint3(req: GenericRequest):
     return enqueue("endpoint3", req.payload)
 
+@app.post("/set-webhook", response_model=SetWebhookResponse)
+async def setWebhook(req: GenericRequest):
+    """Salva o webhook no banco de dados para que o consumer saiba onde responder"""

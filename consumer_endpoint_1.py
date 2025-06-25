@@ -4,7 +4,6 @@ from kafka.errors import NoBrokersAvailable
 
 from kafka_config import KafkaConfig
 
-
 def create_consumer_with_retries(
     bootstrap_servers,
     retries: int = 5,
