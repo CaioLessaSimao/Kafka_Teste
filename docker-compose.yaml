@@ -36,7 +36,7 @@ services:
     networks:
       - kafka-net
 
-  api:               # FastAPI
+  api:               
     build: .
     container_name: fastapi-app
     environment:
@@ -48,10 +48,10 @@ services:
     networks:
       - kafka-net
 
-  consumers:        # Workers Kafka
+  consumers:        
     build: .
     container_name: kafka-consumers
-    command: ["python", "-m", "app.run_consumers"]
+    command: ["python", "-u", "-m", "consumer_endpoint_1"]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on: [kafka]
